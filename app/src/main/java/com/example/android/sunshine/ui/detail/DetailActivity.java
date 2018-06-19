@@ -15,10 +15,12 @@
  */
 package com.example.android.sunshine.ui.detail;
 
+import android.arch.lifecycle.ViewModelProviders;
 import android.databinding.DataBindingUtil;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 
+import com.example.android.sunshine.AppExecutors;
 import com.example.android.sunshine.R;
 import com.example.android.sunshine.data.database.WeatherEntry;
 import com.example.android.sunshine.databinding.ActivityDetailBinding;
@@ -31,6 +33,8 @@ import java.util.Date;
  * Displays single day's forecast
  */
 public class DetailActivity extends AppCompatActivity {
+
+    private DetailActivityViewModel mViewModel;
 
     public static final String WEATHER_ID_EXTRA = "WEATHER_ID_EXTRA";
 
@@ -47,16 +51,39 @@ public class DetailActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        mViewModel = ViewModelProviders.of(this).get(DetailActivityViewModel.class);
         mDetailBinding = DataBindingUtil.setContentView(this, R.layout.activity_detail);
         long timestamp = getIntent().getLongExtra(WEATHER_ID_EXTRA, -1);
         Date date = new Date(timestamp);
 
+        mViewModel.getWeather().observe(this, weatherEntry -> {
+            // Update the UI
+            if (weatherEntry != null) bindWeatherToUI(weatherEntry);
+        });
+
+        /*AppExecutors.getInstance().diskIO().execute(()-> {
+            try {
+
+                // Pretend this is the network loading data
+                Thread.sleep(4000);
+                Date today = SunshineDateUtils.getNormalizedUtcDateForToday();
+                WeatherEntry pretendWeatherFromDatabase = new WeatherEntry(1, 210, today,88.0,99.0,71,1030, 74, 5);
+                mViewModel.setWeather(pretendWeatherFromDatabase);
+
+                Thread.sleep(2000);
+                pretendWeatherFromDatabase = new WeatherEntry(1, 952, today,50.0,60.0,46,1044, 70, 100);
+                mViewModel.setWeather(pretendWeatherFromDatabase);
+
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        });*/
     }
 
     private void bindWeatherToUI(WeatherEntry weatherEntry) {
-        /****************
-         * Weather Icon *
-         ****************/
+        //****************
+        //* Weather Icon *
+        //****************/
 
         int weatherId = weatherEntry.getWeatherIconId();
         int weatherImageId = SunshineWeatherUtils.getLargeArtResourceIdForWeatherCondition(weatherId);
@@ -64,9 +91,9 @@ public class DetailActivity extends AppCompatActivity {
         /* Set the resource ID on the icon to display the art */
         mDetailBinding.primaryInfo.weatherIcon.setImageResource(weatherImageId);
 
-        /****************
-         * Weather Date *
-         ****************/
+        //****************
+        //* Weather Date *
+        //****************/
         /*
          * The date that is stored is a GMT representation at midnight of the date when the weather
          * information was loaded for.
@@ -79,9 +106,9 @@ public class DetailActivity extends AppCompatActivity {
         String dateText = SunshineDateUtils.getFriendlyDateString(DetailActivity.this, localDateMidnightGmt, true);
         mDetailBinding.primaryInfo.date.setText(dateText);
 
-        /***********************
-         * Weather Description *
-         ***********************/
+        //***********************
+        //* Weather Description *
+        //***********************/
         /* Use the weatherId to obtain the proper description */
         String description = SunshineWeatherUtils.getStringForWeatherCondition(DetailActivity.this, weatherId);
 
@@ -95,9 +122,9 @@ public class DetailActivity extends AppCompatActivity {
         /* Set the content description on the weather image (for accessibility purposes) */
         mDetailBinding.primaryInfo.weatherIcon.setContentDescription(descriptionA11y);
 
-        /**************************
-         * High (max) temperature *
-         **************************/
+        //**************************
+        //* High (max) temperature *
+        //**************************/
 
         double maxInCelsius = weatherEntry.getMax();
 
@@ -115,9 +142,9 @@ public class DetailActivity extends AppCompatActivity {
         mDetailBinding.primaryInfo.highTemperature.setText(highString);
         mDetailBinding.primaryInfo.highTemperature.setContentDescription(highA11y);
 
-        /*************************
-         * Low (min) temperature *
-         *************************/
+        //*************************
+        //* Low (min) temperature *
+        //*************************/
 
         double minInCelsius = weatherEntry.getMin();
         /*
@@ -133,9 +160,9 @@ public class DetailActivity extends AppCompatActivity {
         mDetailBinding.primaryInfo.lowTemperature.setText(lowString);
         mDetailBinding.primaryInfo.lowTemperature.setContentDescription(lowA11y);
 
-        /************
-         * Humidity *
-         ************/
+        //************
+        //* Humidity *
+        //************/
 
         double humidity = weatherEntry.getHumidity();
         String humidityString = getString(R.string.format_humidity, humidity);
@@ -147,9 +174,9 @@ public class DetailActivity extends AppCompatActivity {
 
         mDetailBinding.extraDetails.humidityLabel.setContentDescription(humidityA11y);
 
-        /****************************
-         * Wind speed and direction *
-         ****************************/
+        //****************************
+        //* Wind speed and direction *
+        //****************************/
         /* Read wind speed (in MPH) and direction (in compass degrees)*/
         double windSpeed = weatherEntry.getWind();
         double windDirection = weatherEntry.getDegrees();
@@ -161,9 +188,9 @@ public class DetailActivity extends AppCompatActivity {
         mDetailBinding.extraDetails.windMeasurement.setContentDescription(windA11y);
         mDetailBinding.extraDetails.windLabel.setContentDescription(windA11y);
 
-        /************
-         * Pressure *
-         ************/
+        //************
+        //* Pressure *
+        //************/
         double pressure = weatherEntry.getPressure();
 
         /*
